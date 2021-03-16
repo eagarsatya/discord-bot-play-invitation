@@ -11,9 +11,8 @@ client.on('ready', () => {
 });
 
 client.on("message", (message) => {
-    console.log(message.content);
-
     if (message.author.bot) return;
+    console.log(message.content);
 
     if (message.content === 'hello') {
         message.channel.send('hello there');

@@ -1,4 +1,7 @@
 {
+  "engines": {
+    "node": "12.8.0"
+  },
   "name": "discordbot",
   "version": "1.0.0",
   "description": "Invitation Play Discord Bot",
