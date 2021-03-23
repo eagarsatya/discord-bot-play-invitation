@@ -8,7 +8,6 @@ module.exports = {
     getUser: async () => {
         try {
             const res = await pool.query("select * from discord_user");
-            console.table(res.rows);
             return res.rows;
         }
         catch {
@@ -28,7 +27,6 @@ module.exports = {
     hasSayHello: async (userTag) => {
         try {
             const res = await pool.query("select  * from discord_user where usertag = $1 limit 1 ", [userTag]);
-            console.log(res.rows[0]);
             return res.rows[0] == undefined ? false : true;
         }
         catch {
@@ -53,9 +51,44 @@ module.exports = {
         }
         catch (e) {
             console.log("Something went wrong when creating invitation data");
-            console.log(e);
             await pool.query('ROLLBACK')
             return false;
         }
+    },
+
+    findPlayInvitation: async (channelId) => {
+        try {
+            const res = await pool.query("select * from play_invitation where channel_id = $1", [channelId]);
+            return res.rows;
+        }
+        catch {
+            console.log("Something went wrong when gettind Play Invitation");
+            return null;
+        }
+    },
+
+    findPlayInvitationDetail: async (channelId) => {
+        try {
+            const res = await pool.query(`select format('<@%s>',pip.user_id) as userid, pip.created_on as jointime, pi.game, pi.play_time as playtime
+            from play_invitation pi join play_invitation_participant pip on pi.play_invitation_id = pip.play_invitation_id
+            where pi.channel_id = $1`, [channelId]);
+            return res.rows;
+        }
+        catch {
+            console.log("Something went wrong when gettind Play Invitation");
+            return null;
+        }
+    },
+
+    insertParticipant: async (playInvitationId, userId) => {
+        try {
+            await pool.query("insert into play_invitation_participant (play_invitation_id, user_id, created_on) VALUES ($1,$2,to_timestamp($3))", [playInvitationId, userId, getCurrentTime()]);
+            return true;
+        }
+        catch (e) {
+            console.log("Something went wrong when Inserting data");
+            return false;
+        }
     }
+
 }

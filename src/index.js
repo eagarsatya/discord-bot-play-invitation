@@ -1,5 +1,6 @@
 require('dotenv').config();
 const dataAccessMan = require('../db/dataAccess');
+const commonMan = require('./utilities/common');
 const { Client } = require('discord.js');
 
 const client = new Client();
@@ -26,7 +27,6 @@ client.on("message", async (message) => {
 
     if (message.content === '!ip hello') {
         var exist = await dataAccessMan.hasSayHello(message.author.tag) != false;
-        console.log(exist);
         if (exist) {
             message.channel.send(`Hi I remember you ${message.author.username}!`);
         }
@@ -65,13 +65,47 @@ client.on("message", async (message) => {
             whenToPlay.getMinutes(),
             whenToPlay.getSeconds()].join(':');
 
-        var result = await dataAccessMan.createPlayInvitation(message.author.id, dateToPlay, message.channel.id, game);
+        let currentPlayInvitation = await dataAccessMan.findPlayInvitation(message.channel.id);
+        if (currentPlayInvitation.length > 0) {
+            message.channel.send(`There's Play Invitation that currently running for Game : ${currentPlayInvitation[0].game}`);
+            return;
+        }
+
+        let result = await dataAccessMan.createPlayInvitation(message.author.id, dateToPlay, message.channel.id, game);
         if (result) {
             message.channel.send(`<@${message.author.id}> invite you to play ${game} at ${dateString}`);
         }
         else {
             message.channel.send("Something went wrong while creating Play Invitation");
         }
+    }
+    else if (message.content === "!ip list") {
+        let currentPlayInvitation = await dataAccessMan.findPlayInvitationDetail(message.channel.id);
+        if (currentPlayInvitation.length > 0) {
+            let table = commonMan.convertJsonToTable(currentPlayInvitation);
+            console.log(table);
+            message.channel.send(table);
+        }
+        else {
+            message.channel.send("There isn't any Play Invitation for now. Invite your friends to play?");
+        }
+    }
+    else if (message.content === "!ip join") {
+        let currentPlayInvitation = await dataAccessMan.findPlayInvitation(message.channel.id);
+        if (currentPlayInvitation.length == 0) {
+            message.channel.send("There isn't any Play Invitation for now. Invite your friends to play?");
+            return;
+        }
+        console.log(message.author.tag, message.author.id)
+        let result = await dataAccessMan.insertParticipant(currentPlayInvitation[0].play_invitation_id, message.author.id)
+
+        if (result === true) {
+            message.channel.send("Succesfully join the party! Have fun!");
+        }
+        else {
+            message.channel.send("Failed to join the party :'(");
+        }
+
     }
 })
 

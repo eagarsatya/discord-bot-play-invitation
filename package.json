@@ -15,6 +15,7 @@
   "dependencies": {
     "discord.js": "^12.5.1",
     "dotenv": "^8.2.0",
+    "jsontostringtable": "^1.0.2",
     "pg": "^8.5.1"
   }
 }
