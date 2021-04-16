@@ -3,13 +3,16 @@ const dataAccessMan = require('../db/dataAccess');
 const commonMan = require('./utilities/common');
 const { Client } = require('discord.js');
 
+const regex = new RegExp("!ip play [\d|\D]{1,100} (0[0-9]|1[0-9]|2[1-3]):([0-5]|[0-9])")
+
 const client = new Client();
 
 const listCommand = [
     "Hey mate thanks for asking! Here is some feature that you can use for now : ",
     "MAIN FEATURE : ",
     "=====================",
-    "!ip play [game] [time]",
+    "!ip play [game(anystring 1-100)] [time(hh:mm)]",
+    "!ip join",
     "EXTRA FEATURE : ",
     "=====================",
     "!ip tag - for the answer of your what's your tag",
@@ -47,7 +50,7 @@ client.on("message", async (message) => {
     else if (message.content === "!ip help") {
         message.channel.send(listCommand.join("\n"));
     }
-    else if (message.content === "!ip play") {
+    else if (message.content.includes("!ip play")) {
         let game = "Dota";
         let whenToPlay = new Date();
         let dateToPlay = Date.now() / 1000;
@@ -57,6 +60,11 @@ client.on("message", async (message) => {
         //     ("00" + whenToPlay.getHours()).slice(-2) + ":" +
         //     ("00" + whenToPlay.getMinutes()).slice(-2) + ":" +
         //     ("00" + whenToPlay.getSeconds()).slice(-2);
+
+        if (!regex.test(message.content)) {
+            message.channel.send("Invalid format");
+            return;
+        }
 
         let dateString = [whenToPlay.getMonth() + 1,
         whenToPlay.getDate(),
@@ -96,8 +104,17 @@ client.on("message", async (message) => {
             message.channel.send("There isn't any Play Invitation for now. Invite your friends to play?");
             return;
         }
-        console.log(message.author.tag, message.author.id)
-        let result = await dataAccessMan.insertParticipant(currentPlayInvitation[0].play_invitation_id, message.author.id)
+
+        let currentPlayInvitationId = currentPlayInvitation[0].play_invitation_id;
+
+        let userAlreadyJoin = await dataAccessMan.userAlreadyJoin(currentPlayInvitationId, message.author.id);
+
+        if (userAlreadyJoin) {
+            message.channel.send("You already join the party! Good luck, have fun!");
+            return;
+        }
+
+        let result = await dataAccessMan.insertParticipant(currentPlayInvitationId, message.author.id)
 
         if (result === true) {
             message.channel.send("Succesfully join the party! Have fun!");
@@ -105,7 +122,14 @@ client.on("message", async (message) => {
         else {
             message.channel.send("Failed to join the party :'(");
         }
-
+    }
+    else if (message.content === "!ip clear") {
+        let result = await dataAccessMan.clearInvitation(message.channel.id);
+        if (result) {
+            message.channel.send("Cleared!");
+            return;
+        }
+        message.channel.send("Failed to clear the invitation");
     }
 })
 

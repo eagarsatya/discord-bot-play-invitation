@@ -69,7 +69,7 @@ module.exports = {
 
     findPlayInvitationDetail: async (channelId) => {
         try {
-            const res = await pool.query(`select format('<@%s>',pip.user_id) as userid, pip.created_on as jointime, pi.game, pi.play_time as playtime
+            let res = await pool.query(`select format('<@%s>',pip.user_id) as userid, pip.created_on as jointime, pi.game, pi.play_time as playtime
             from play_invitation pi join play_invitation_participant pip on pi.play_invitation_id = pip.play_invitation_id
             where pi.channel_id = $1`, [channelId]);
             return res.rows;
@@ -89,6 +89,30 @@ module.exports = {
             console.log("Something went wrong when Inserting data");
             return false;
         }
+    },
+
+    userAlreadyJoin: async (playInvitationId, userId) => {
+        try {
+            let res = await pool.query("select * from play_invitation_participant where play_invitation_id = $1 AND user_id = $2", [playInvitationId, userId]);
+            return res.rowCount === 0 ? false : true;
+        }
+        catch (e) {
+            console.log(e);
+            console.log("Something went wrong when fetching data")
+            return false;
+        }
+    },
+
+    clearInvitation: async (channelId) => {
+        try {
+            let res = await pool.query("delete from play_invitation where channel_id = $1", [channelId]);
+            return true;
+        }
+        catch {
+            console.log(e);
+        }
+        return false;
+
     }
 
 }
