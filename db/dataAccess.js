@@ -7,7 +7,7 @@ function getCurrentTime() {
 module.exports = {
     getUser: async () => {
         try {
-            const res = await pool.query("select * from discord_user");
+            let res = await pool.query("select * from discord_user");
             return res.rows;
         }
         catch {
@@ -17,7 +17,7 @@ module.exports = {
 
     addUser: async (userTag) => {
         try {
-            const insertUser = await pool.query("INSERT INTO discord_user (usertag,created_on) VALUES ($1,to_timestamp($2))", [userTag, getCurrentTime()]);
+            let insertUser = await pool.query("INSERT INTO discord_user (usertag,created_on) VALUES ($1,to_timestamp($2))", [userTag, getCurrentTime()]);
         }
         catch (e) {
             console.log("Something went wrong when Inserting data");
@@ -26,7 +26,7 @@ module.exports = {
 
     hasSayHello: async (userTag) => {
         try {
-            const res = await pool.query("select  * from discord_user where usertag = $1 limit 1 ", [userTag]);
+            let res = await pool.query("select  * from discord_user where usertag = $1 limit 1 ", [userTag]);
             return res.rows[0] == undefined ? false : true;
         }
         catch {
@@ -38,12 +38,12 @@ module.exports = {
     createPlayInvitation: async (userId, whenToPlay, channelId, game) => {
         try {
             await pool.query("BEGIN");
-            const queryHeader = 'INSERT INTO play_invitation(user_id, channel_id,game,created_on,play_time) VALUES($1,$2,$3,to_timestamp($4),to_timestamp($5)) RETURNING play_invitation_id';
-            const valueHeader = [userId, channelId, game, getCurrentTime(), whenToPlay];
-            const result = await pool.query(queryHeader, valueHeader);
+            let queryHeader = 'INSERT INTO play_invitation(user_id, channel_id,game,created_on,play_time) VALUES($1,$2,$3,to_timestamp($4),to_timestamp($5)) RETURNING play_invitation_id';
+            let valueHeader = [userId, channelId, game, getCurrentTime(), whenToPlay];
+            let result = await pool.query(queryHeader, valueHeader);
 
-            const queryParticipant = 'INSERT INTO play_invitation_participant(play_invitation_id,user_id,created_on) VALUES($1,$2,to_timestamp($3))'
-            const valueParticipant = [result.rows[0].play_invitation_id, userId, getCurrentTime()];
+            let queryParticipant = 'INSERT INTO play_invitation_participant(play_invitation_id,user_id,created_on) VALUES($1,$2,to_timestamp($3))'
+            let valueParticipant = [result.rows[0].play_invitation_id, userId, getCurrentTime()];
             await pool.query(queryParticipant, valueParticipant);
 
             await pool.query('COMMIT')
@@ -58,7 +58,7 @@ module.exports = {
 
     findPlayInvitation: async (channelId) => {
         try {
-            const res = await pool.query("select * from play_invitation where channel_id = $1", [channelId]);
+            let res = await pool.query("select * from play_invitation where channel_id = $1", [channelId]);
             return res.rows;
         }
         catch {

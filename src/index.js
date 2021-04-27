@@ -3,7 +3,7 @@ const dataAccessMan = require('../db/dataAccess');
 const commonMan = require('./utilities/common');
 const { Client } = require('discord.js');
 
-const regex = new RegExp("!ip play [\d|\D]{1,100} (0[0-9]|1[0-9]|2[1-3]):([0-5]|[0-9])")
+// const regex = new RegExp('!ip play [\d|\D]{1,100} (0[0-9]|1[0-9]|2[1-3]):([0-5][0-9])')
 
 const client = new Client();
 
@@ -13,6 +13,8 @@ const listCommand = [
     "=====================",
     "!ip play [game(anystring 1-100)] [time(hh:mm)]",
     "!ip join",
+    "!ip list",
+    "!ip clear",
     "EXTRA FEATURE : ",
     "=====================",
     "!ip tag - for the answer of your what's your tag",
@@ -50,28 +52,26 @@ client.on("message", async (message) => {
     else if (message.content === "!ip help") {
         message.channel.send(listCommand.join("\n"));
     }
-    else if (message.content.includes("!ip play")) {
-        let game = "Dota";
-        let whenToPlay = new Date();
-        let dateToPlay = Date.now() / 1000;
-        // let dateString = ("00" + (whenToPlay.getMonth() + 1)).slice(-2) + "/" +
-        //     ("00" + whenToPlay.getDate()).slice(-2) + "/" +
-        //     date.getFullYear() + " " +
-        //     ("00" + whenToPlay.getHours()).slice(-2) + ":" +
-        //     ("00" + whenToPlay.getMinutes()).slice(-2) + ":" +
-        //     ("00" + whenToPlay.getSeconds()).slice(-2);
+    else if (message.content.startsWith("!ip play")) {
+        let currentDate = new Date();
 
-        if (!regex.test(message.content)) {
-            message.channel.send("Invalid format");
+        try {
+            var substringHour = parseInt(message.content.substr(message.content.length - 5, 2));
+            var substringMinute = parseInt(message.content.substr(message.content.length - 2, 2));
+
+            var game = message.content.substring(9, message.content.length - 5)
+        } catch (e) {
+            message.channel.send("Failed to substring :')");
             return;
         }
 
-        let dateString = [whenToPlay.getMonth() + 1,
-        whenToPlay.getDate(),
-        whenToPlay.getFullYear()].join('/') + ' ' +
-            [whenToPlay.getHours(),
-            whenToPlay.getMinutes(),
-            whenToPlay.getSeconds()].join(':');
+        let playDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), substringHour, substringMinute);
+        let dateString = [playDate.getMonth() + 1,
+        playDate.getDate(),
+        playDate.getFullYear()].join('/') + ' ' +
+            [playDate.getHours(),
+            playDate.getMinutes(),
+            playDate.getSeconds()].join(':');
 
         let currentPlayInvitation = await dataAccessMan.findPlayInvitation(message.channel.id);
         if (currentPlayInvitation.length > 0) {
@@ -79,7 +79,7 @@ client.on("message", async (message) => {
             return;
         }
 
-        let result = await dataAccessMan.createPlayInvitation(message.author.id, dateToPlay, message.channel.id, game);
+        let result = await dataAccessMan.createPlayInvitation(message.author.id, playDate / 1000, message.channel.id, game);
         if (result) {
             message.channel.send(`<@${message.author.id}> invite you to play ${game} at ${dateString}`);
         }
@@ -91,7 +91,6 @@ client.on("message", async (message) => {
         let currentPlayInvitation = await dataAccessMan.findPlayInvitationDetail(message.channel.id);
         if (currentPlayInvitation.length > 0) {
             let table = commonMan.convertJsonToTable(currentPlayInvitation);
-            console.log(table);
             message.channel.send(table);
         }
         else {
